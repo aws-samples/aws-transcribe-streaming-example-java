@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazonaws.transcribestreaming;
 
 import javafx.application.Platform;
@@ -182,20 +197,23 @@ public class WindowController {
                     List<Result> results = ((TranscriptEvent) event).transcript().results();
                     if(results.size()>0) {
                         Result firstResult = results.get(0);
-                        String transcript = firstResult.alternatives().get(0).transcript();
-                        if(!transcript.isEmpty() && !firstResult.isPartial()) {
-                            System.out.println(transcript);
-                            if(startTime == null) {
-                                startTime = firstResult.startTime();
-                            }
-                            endTime = firstResult.endTime();
-                            finalTranscript += transcript + " ";
-                            Platform.runLater(() -> {
-                                outputTextArea.appendText(transcript + "\n");
-                                outputTextArea.setScrollTop(Double.MAX_VALUE);
-                            });
+                        if (firstResult.alternatives().size() > 0 && !firstResult.alternatives().get(0).transcript().isEmpty()) {
+                            String transcript = firstResult.alternatives().get(0).transcript();
+                            if(!transcript.isEmpty() && !firstResult.isPartial()) {
+                                System.out.println(transcript);
+                                if(startTime == null) {
+                                    startTime = firstResult.startTime();
+                                }
+                                endTime = firstResult.endTime();
+                                finalTranscript += transcript + " ";
+                                Platform.runLater(() -> {
+                                    outputTextArea.appendText(transcript + "\n");
+                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
+                                });
 
+                            }
                         }
+
                     }
                 })
                 .build();
