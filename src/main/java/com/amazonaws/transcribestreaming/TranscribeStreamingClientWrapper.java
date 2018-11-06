@@ -19,18 +19,16 @@ package com.amazonaws.transcribestreaming;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.auth.signer.EventStreamAws4Signer;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.transcribestreaming.TranscribeStreamingAsyncClient;
-import software.amazon.awssdk.services.transcribestreaming.model.AudioEvent;
 import software.amazon.awssdk.services.transcribestreaming.model.AudioStream;
 import software.amazon.awssdk.services.transcribestreaming.model.LanguageCode;
 import software.amazon.awssdk.services.transcribestreaming.model.MediaEncoding;
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionRequest;
-import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponseHandler;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -43,14 +41,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This wraps the TranscribeStreamingAsyncClient with easier to use methods for quicker integration with the GUI. This
@@ -61,16 +54,20 @@ public class TranscribeStreamingClientWrapper {
 
     private static final String ENDPOINT = "https://transcribestreaming.us-east-1.amazonaws.com";
 
-    private TranscribeStreamingAsyncClient client;
+    private TranscribeStreamingRetryClient client;
     private AudioStreamPublisher requestStream;
 
     public TranscribeStreamingClientWrapper() {
         try {
-            client = TranscribeStreamingAsyncClient.builder()
+            client = new TranscribeStreamingRetryClient(TranscribeStreamingAsyncClient.builder()
                     .credentialsProvider(getCredentials())
+                    .overrideConfiguration(
+                            c -> c.putAdvancedOption(
+                                    SdkAdvancedClientOption.SIGNER,
+                                    EventStreamAws4Signer.create()))
                     .endpointOverride(new URI(ENDPOINT))
                     .region(Region.US_EAST_1)
-                    .build();
+                    .build());
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid URI syntax for endpoint: " + ENDPOINT);
         }
@@ -84,7 +81,7 @@ public class TranscribeStreamingClientWrapper {
      *                        objects as they are received from the streaming service
      * @param inputFile optional input file to stream audio from. Will stream from the microphone if this is set to null
      */
-    public CompletableFuture<Void> startTranscription(StartStreamTranscriptionResponseHandler responseHandler, File inputFile) {
+    public CompletableFuture<Void> startTranscription(StreamTranscriptionBehavior responseHandler, File inputFile) {
         if (requestStream != null) {
             throw new IllegalStateException("Stream is already open");
         }
@@ -173,7 +170,7 @@ public class TranscribeStreamingClientWrapper {
 
     /**
      * Build an input stream from an audio file
-     * @param audioFileName Name of the file containing audio to transcribe
+     * @param inputFile Name of the file containing audio to transcribe
      * @return InputStream built from reading the file's audio
      */
     private static InputStream getStreamFromFile(File inputFile) {
@@ -223,83 +220,4 @@ public class TranscribeStreamingClientWrapper {
             s.onSubscribe(new ByteToAudioEventSubscription(s, inputStream));
         }
     }
-
-    /**
-     * This is an example Subscription implementation that converts bytes read from an AudioStream into AudioEvents
-     * that can be sent to the Transcribe service. It implements a simple demand system that will read chunks of bytes
-     * from an input stream containing audio data
-     *
-     * To read more about how Subscriptions and reactive streams work, please see
-     * https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md
-     */
-    private static class ByteToAudioEventSubscription implements Subscription {
-        private static final int CHUNK_SIZE_IN_BYTES = 1024 * 1;
-        private ExecutorService executor = Executors.newFixedThreadPool(1);
-        private AtomicLong demand = new AtomicLong(0);
-
-        private final Subscriber<? super AudioStream> subscriber;
-        private final InputStream inputStream;
-
-        private ByteToAudioEventSubscription(Subscriber<? super AudioStream> s, InputStream inputStream) {
-            this.subscriber = s;
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public void request(long n) {
-            if (n <= 0) {
-                subscriber.onError(new IllegalArgumentException("Demand must be positive"));
-            }
-
-            demand.getAndAdd(n);
-
-            executor.submit(() -> {
-                try {
-                    do {
-                        ByteBuffer audioBuffer = getNextEvent();
-                        if (audioBuffer.remaining() > 0) {
-                            AudioEvent audioEvent = audioEventFromBuffer(audioBuffer);
-                            subscriber.onNext(audioEvent);
-                        } else {
-                            subscriber.onComplete();
-                            break;
-                        }
-                    } while (demand.decrementAndGet() > 0);
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
-            });
-        }
-
-        @Override
-        public void cancel() {
-            executor.shutdown();
-        }
-
-        private ByteBuffer getNextEvent() {
-            ByteBuffer audioBuffer = null;
-            byte[] audioBytes = new byte[CHUNK_SIZE_IN_BYTES];
-
-            try {
-                int len = inputStream.read(audioBytes);
-
-                if (len <= 0) {
-                    audioBuffer = ByteBuffer.allocate(0);
-                } else {
-                    audioBuffer = ByteBuffer.wrap(audioBytes, 0, len);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            return audioBuffer;
-        }
-
-        private AudioEvent audioEventFromBuffer(ByteBuffer bb) {
-            return AudioEvent.builder()
-                    .audioChunk(SdkBytes.fromByteBuffer(bb))
-                    .build();
-        }
-    }
-
 }

@@ -28,7 +28,7 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>aws-sdk-java</artifactId>
       <!-- TODO: change this to real version once it is released -->
-      <version>2.0.0-preview-13-SNAPSHOT</version>
+      <version>2.1.0</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.reactivestreams/reactive-streams -->
     <dependency>

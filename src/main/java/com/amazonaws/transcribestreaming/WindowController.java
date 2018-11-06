@@ -28,12 +28,15 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import software.amazon.awssdk.services.transcribestreaming.model.Result;
+import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponseHandler;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
+import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -156,69 +159,85 @@ public class WindowController {
      * transcriptions, and decides what to do with them. This example displays the transcripts in the GUI window, and
      * combines the transcripts together into a final transcript at the end.
      */
-    private StartStreamTranscriptionResponseHandler getResponseHandlerForWindow() {
-        return StartStreamTranscriptionResponseHandler.builder()
-                .onResponse(r -> {
-                    System.out.println(String.format("=== Received Initial response. Request Id: %s ===", r.requestId()));
-                    Platform.runLater(() -> {
-                        startStopMicButton.setText("Stop Transcription");
-                        startStopMicButton.setOnAction(__ -> stopTranscription());
-                        startStopMicButton.setDisable(false);
-                    });
-                })
-                .onError(e -> {
-                    System.out.println(e.getMessage());
-                    System.out.println("Error Occurred: " + e);
-                })
-                .onComplete(() -> {
-                    System.out.println("=== All records streamed successfully ===");
-                    Platform.runLater(() -> {
-                        finalTextArea.setText(finalTranscript);
+    private StreamTranscriptionBehavior getResponseHandlerForWindow() {
+        return new StreamTranscriptionBehavior() {
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(e.getMessage());
+                Throwable cause = e.getCause();
+                while (cause != null) {
+                    System.out.println("Caused by: " + cause.getMessage());
+                    Arrays.stream(cause.getStackTrace()).forEach(l -> System.out.println("  " + l));
+                    if (cause.getCause() != cause) { //Look out for circular causes
+                        cause = cause.getCause();
+                    } else {
+                        cause = null;
+                    }
+                }
+                System.out.println("Error Occurred: " + e);
+            }
 
-
-
-                        saveButton.setDisable(false);
-                        saveButton.setOnAction(__ -> {
-                            FileChooser fileChooser = new FileChooser();
-                            fileChooser.setTitle("Save Transcript");
-                            File file = fileChooser.showSaveDialog(primaryStage);
-                            if (file != null) {
-                                try {
-                                    FileWriter writer = new FileWriter(file);
-                                    writer.write(finalTranscript);
-                                    writer.close();
-                                } catch (IOException e) {
-                                    System.out.println("Error saving transcript to file: " + e);
-                                }
+            @Override
+            public void onStream(TranscriptResultStream event) {
+                List<Result> results = ((TranscriptEvent) event).transcript().results();
+                if(results.size()>0) {
+                    Result firstResult = results.get(0);
+                    if (firstResult.alternatives().size() > 0 && !firstResult.alternatives().get(0).transcript().isEmpty()) {
+                        String transcript = firstResult.alternatives().get(0).transcript();
+                        if(!transcript.isEmpty()) {
+                            System.out.println(transcript);
+                            if(startTime == null) {
+                                startTime = firstResult.startTime();
                             }
-                        });
-
-                    });
-                })
-                .subscriber(event -> {
-                    List<Result> results = ((TranscriptEvent) event).transcript().results();
-                    if(results.size()>0) {
-                        Result firstResult = results.get(0);
-                        if (firstResult.alternatives().size() > 0 && !firstResult.alternatives().get(0).transcript().isEmpty()) {
-                            String transcript = firstResult.alternatives().get(0).transcript();
-                            if(!transcript.isEmpty() && !firstResult.isPartial()) {
-                                System.out.println(transcript);
-                                if(startTime == null) {
-                                    startTime = firstResult.startTime();
-                                }
-                                endTime = firstResult.endTime();
+                            endTime = firstResult.endTime();
+                            if (!firstResult.isPartial()) {
                                 finalTranscript += transcript + " ";
-                                Platform.runLater(() -> {
-                                    outputTextArea.appendText(transcript + "\n");
-                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
-                                });
+                            }
+                            Platform.runLater(() -> {
+                                outputTextArea.appendText(transcript + "\n");
+                                outputTextArea.setScrollTop(Double.MAX_VALUE);
+                            });
 
+                        }
+                    }
+
+                }
+            }
+
+            @Override
+            public void onResponse(StartStreamTranscriptionResponse r) {
+                System.out.println(String.format("=== Received Initial response. Request Id: %s ===", r.requestId()));
+                Platform.runLater(() -> {
+                    startStopMicButton.setText("Stop Transcription");
+                    startStopMicButton.setOnAction(__ -> stopTranscription());
+                    startStopMicButton.setDisable(false);
+                });
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println("=== All records streamed successfully ===");
+                Platform.runLater(() -> {
+                    finalTextArea.setText(finalTranscript);
+                    saveButton.setDisable(false);
+                    saveButton.setOnAction(__ -> {
+                        FileChooser fileChooser = new FileChooser();
+                        fileChooser.setTitle("Save Transcript");
+                        File file = fileChooser.showSaveDialog(primaryStage);
+                        if (file != null) {
+                            try {
+                                FileWriter writer = new FileWriter(file);
+                                writer.write(finalTranscript);
+                                writer.close();
+                            } catch (IOException e) {
+                                System.out.println("Error saving transcript to file: " + e);
                             }
                         }
+                    });
 
-                    }
-                })
-                .build();
+                });
+            }
+        };
     }
 
 }
