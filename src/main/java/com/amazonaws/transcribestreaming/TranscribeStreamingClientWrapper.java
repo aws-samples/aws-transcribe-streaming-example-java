@@ -36,6 +36,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -91,7 +92,9 @@ public class TranscribeStreamingClientWrapper {
              * For input from microphone, see getStreamFromMic().
              * For input from file, see getStreamFromFile().
              */
+            int sampleRate = 16_000; //default
             if (inputFile != null) {
+                sampleRate = (int) AudioSystem.getAudioInputStream(inputFile).getFormat().getSampleRate();
                 requestStream = new AudioStreamPublisher(getStreamFromFile(inputFile));
             } else {
                 requestStream = new AudioStreamPublisher(getStreamFromMic());
@@ -100,14 +103,14 @@ public class TranscribeStreamingClientWrapper {
                     /*
                      * Request parameters. Refer to API document for details.
                      */
-                    getRequest(16_000),
+                    getRequest(sampleRate),
                     requestStream,
                     /*
                      * Subscriber of real-time transcript stream.
                      * Output will print to your computer's standard output.
                      */
                     responseHandler);
-        } catch (LineUnavailableException ex) {
+        } catch (LineUnavailableException | UnsupportedAudioFileException | IOException ex) {
             CompletableFuture<Void> failedFuture = new CompletableFuture<>();
             failedFuture.completeExceptionally(ex);
             return failedFuture;

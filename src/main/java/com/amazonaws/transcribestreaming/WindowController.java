@@ -29,7 +29,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import software.amazon.awssdk.services.transcribestreaming.model.Result;
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
-import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponseHandler;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
 
@@ -194,7 +193,7 @@ public class WindowController {
                                 finalTranscript += transcript + " ";
                             }
                             Platform.runLater(() -> {
-                                outputTextArea.appendText(transcript + "\n");
+                                outputTextArea.setText(finalTranscript + " " + transcript);
                                 outputTextArea.setScrollTop(Double.MAX_VALUE);
                             });
 
