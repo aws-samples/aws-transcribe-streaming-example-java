@@ -53,25 +53,30 @@ import java.util.concurrent.CompletableFuture;
  */
 public class TranscribeStreamingClientWrapper {
 
-    private static final String ENDPOINT = "https://transcribestreaming.us-east-1.amazonaws.com";
+    private static final String ENDPOINT = "https://transcribestreaming.us-west-2.amazonaws.com";
 
     private TranscribeStreamingRetryClient client;
     private AudioStreamPublisher requestStream;
 
     public TranscribeStreamingClientWrapper() {
+        client = new TranscribeStreamingRetryClient(getClient());
+    }
+
+    public static TranscribeStreamingAsyncClient getClient() {
         try {
-            client = new TranscribeStreamingRetryClient(TranscribeStreamingAsyncClient.builder()
+            return TranscribeStreamingAsyncClient.builder()
                     .credentialsProvider(getCredentials())
                     .overrideConfiguration(
                             c -> c.putAdvancedOption(
                                     SdkAdvancedClientOption.SIGNER,
                                     EventStreamAws4Signer.create()))
                     .endpointOverride(new URI(ENDPOINT))
-                    .region(Region.US_EAST_1)
-                    .build());
+                    .region(Region.US_WEST_2)
+                    .build();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid URI syntax for endpoint: " + ENDPOINT);
         }
+
     }
 
     /**

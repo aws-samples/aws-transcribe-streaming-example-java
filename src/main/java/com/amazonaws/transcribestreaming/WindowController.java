@@ -48,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 public class WindowController {
 
     private TranscribeStreamingClientWrapper client;
+    private TranscribeStreamingSynchronousClient synchronousClient;
     private TextArea outputTextArea;
     private Button startStopMicButton;
     private Button fileStreamButton;
@@ -55,12 +56,11 @@ public class WindowController {
     private TextArea finalTextArea;
     private CompletableFuture<Void> inProgressStreamingRequest;
     private String finalTranscript = "";
-    private Double startTime;
-    private Double endTime;
     private Stage primaryStage;
 
     public WindowController(Stage primaryStage) {
         client = new TranscribeStreamingClientWrapper();
+        synchronousClient = new TranscribeStreamingSynchronousClient(TranscribeStreamingClientWrapper.getClient());
         this.primaryStage = primaryStage;
         initializeWindow(primaryStage);
     }
@@ -72,6 +72,23 @@ public class WindowController {
         client.close();
     }
 
+    private void startFileTranscriptionRequest(File inputFile) {
+        if (inProgressStreamingRequest == null) {
+            finalTextArea.clear();
+            finalTranscript = "";
+            startStopMicButton.setText("Streaming...");
+            startStopMicButton.setDisable(true);
+            outputTextArea.clear();
+            finalTextArea.clear();
+            saveButton.setDisable(true);
+            finalTranscript = synchronousClient.transcribeFile(inputFile);
+            finalTextArea.setText(finalTranscript);
+            startStopMicButton.setDisable(false);
+            saveButton.setDisable(false);
+            startStopMicButton.setText("Start Microphone Transcription");
+        }
+    }
+
     private void startTranscriptionRequest(File inputFile) {
         if (inProgressStreamingRequest == null) {
             finalTextArea.clear();
@@ -81,7 +98,6 @@ public class WindowController {
             outputTextArea.clear();
             finalTextArea.clear();
             saveButton.setDisable(true);
-            startTime = null;
             inProgressStreamingRequest = client.startTranscription(getResponseHandlerForWindow(), inputFile);
         }
     }
@@ -97,7 +113,7 @@ public class WindowController {
         primaryStage.setScene(scene);
 
         startStopMicButton = new Button();
-        startStopMicButton.setText("Start Transcription");
+        startStopMicButton.setText("Start Microphone Transcription");
         startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
         grid.add(startStopMicButton, 0, 0, 1, 1);
 
@@ -107,7 +123,9 @@ public class WindowController {
             FileChooser inputFileChooser = new FileChooser();
             inputFileChooser.setTitle("Stream Audio File");
             File inputFile = inputFileChooser.showOpenDialog(primaryStage);
-            startTranscriptionRequest(inputFile);
+            if (inputFile != null) {
+                startFileTranscriptionRequest(inputFile);
+            }
         });
         grid.add(fileStreamButton, 1, 0, 1, 1);
 
@@ -145,7 +163,7 @@ public class WindowController {
                 System.out.println("error closing stream");
             } finally {
                 inProgressStreamingRequest = null;
-                startStopMicButton.setText("Start Transcription");
+                startStopMicButton.setText("Start Microphone Transcription");
                 startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
                 startStopMicButton.setDisable(false);
             }
@@ -160,6 +178,8 @@ public class WindowController {
      */
     private StreamTranscriptionBehavior getResponseHandlerForWindow() {
         return new StreamTranscriptionBehavior() {
+
+            //This will handle errors being returned from AWS Transcribe in your response. Here we just print the exception.
             @Override
             public void onError(Throwable e) {
                 System.out.println(e.getMessage());
@@ -176,6 +196,11 @@ public class WindowController {
                 System.out.println("Error Occurred: " + e);
             }
 
+            /*
+            This handles each event being received from the Transcribe service. In this example we are displaying the
+            transcript as it is updated, and when we receive a "final" transcript, we append it to our finalTranscript
+            which is returned at the end of the microphone streaming.
+             */
             @Override
             public void onStream(TranscriptResultStream event) {
                 List<Result> results = ((TranscriptEvent) event).transcript().results();
@@ -185,10 +210,6 @@ public class WindowController {
                         String transcript = firstResult.alternatives().get(0).transcript();
                         if(!transcript.isEmpty()) {
                             System.out.println(transcript);
-                            if(startTime == null) {
-                                startTime = firstResult.startTime();
-                            }
-                            endTime = firstResult.endTime();
                             if (!firstResult.isPartial()) {
                                 finalTranscript += transcript + " ";
                             }
@@ -203,6 +224,11 @@ public class WindowController {
                 }
             }
 
+            /*
+            This handles the initial response from the AWS Transcribe service, generally indicating the streams have
+            successfully been opened. Here we just print that we have received the initial response and do some
+            UI updates.
+             */
             @Override
             public void onResponse(StartStreamTranscriptionResponse r) {
                 System.out.println(String.format("=== Received Initial response. Request Id: %s ===", r.requestId()));
@@ -213,6 +239,11 @@ public class WindowController {
                 });
             }
 
+            /*
+            This method is called when the stream is terminated without error. In our case we will use this opportunity
+            to display the final, total transcript we've been aggregating during the transcription period and activates
+            the save button.
+             */
             @Override
             public void onComplete() {
                 System.out.println("=== All records streamed successfully ===");

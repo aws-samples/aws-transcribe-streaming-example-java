@@ -25,6 +25,8 @@ import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTran
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponseHandler;
 import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
 
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,11 +52,11 @@ public class TranscribeStreamingSynchronousClient {
 
     public String transcribeFile(File audioFile) {
         try {
-
+            int sampleRate = (int) AudioSystem.getAudioInputStream(audioFile).getFormat().getSampleRate();
             StartStreamTranscriptionRequest request = StartStreamTranscriptionRequest.builder()
                     .languageCode(LanguageCode.EN_US.toString())
                     .mediaEncoding(MediaEncoding.PCM)
-                    .mediaSampleRateHertz(16_000)
+                    .mediaSampleRateHertz(sampleRate)
                     .build();
             AudioStreamPublisher audioStream = new AudioStreamPublisher(new FileInputStream(audioFile));
             StartStreamTranscriptionResponseHandler responseHandler = getResponseHandler();
@@ -71,6 +73,8 @@ public class TranscribeStreamingSynchronousClient {
         } catch (InterruptedException e) {
             System.out.println("Stream thread interupted: " + e);
             throw new RuntimeException(e);
+        } catch (UnsupportedAudioFileException e) {
+            System.out.println("File type not recognized: " + audioFile.getName() + ", error: " + e);
         } catch (TimeoutException e) {
             System.out.println("Stream not closed within timeout window of " + MAX_TIMEOUT_MS + " ms");
             throw new RuntimeException(e);
@@ -78,6 +82,10 @@ public class TranscribeStreamingSynchronousClient {
         return finalTranscript;
     }
 
+    /**
+     * Get a response handler that aggregates the transcripts as they arrive
+     * @return Response handler used to handle events from AWS Transcribe service.
+     */
     private StartStreamTranscriptionResponseHandler getResponseHandler() {
         return StartStreamTranscriptionResponseHandler.builder()
                 .subscriber(event -> {
