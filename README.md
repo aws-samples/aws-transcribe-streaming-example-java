@@ -6,6 +6,11 @@ Example Java Application using AWS SDK creating streaming transcriptions via AWS
 
 This sample code is made available under a modified MIT license. See the LICENSE file.
 
+## Setup
+
+This application assumes your credentials are defined in the same way the [Default Credential Provider Chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default)
+requires.
+
 ## Description
 
 This application demonstrates how to use AWS Transcribe's streaming API by wrapping it in a graphical user-interface. 
