@@ -23,7 +23,9 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.signer.EventStreamAws4Signer;
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.transcribestreaming.TranscribeStreamingAsyncClient;
 import software.amazon.awssdk.services.transcribestreaming.model.AudioStream;
 import software.amazon.awssdk.services.transcribestreaming.model.LanguageCode;
@@ -53,8 +55,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class TranscribeStreamingClientWrapper {
 
-    private static final String ENDPOINT = "https://transcribestreaming.us-west-2.amazonaws.com";
-
     private TranscribeStreamingRetryClient client;
     private AudioStreamPublisher requestStream;
 
@@ -63,6 +63,8 @@ public class TranscribeStreamingClientWrapper {
     }
 
     public static TranscribeStreamingAsyncClient getClient() {
+        Region region = getRegion();
+        String endpoint = "https://transcribestreaming." + region.toString().toLowerCase().replace('_','-') + ".amazonaws.com";
         try {
             return TranscribeStreamingAsyncClient.builder()
                     .credentialsProvider(getCredentials())
@@ -70,13 +72,26 @@ public class TranscribeStreamingClientWrapper {
                             c -> c.putAdvancedOption(
                                     SdkAdvancedClientOption.SIGNER,
                                     EventStreamAws4Signer.create()))
-                    .endpointOverride(new URI(ENDPOINT))
-                    .region(Region.US_WEST_2)
+                    .endpointOverride(new URI(endpoint))
+                    .region(region)
                     .build();
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid URI syntax for endpoint: " + ENDPOINT);
+            throw new IllegalArgumentException("Invalid URI syntax for endpoint: " + endpoint);
         }
 
+    }
+
+    /**
+     * Get region from default region provider chain, default to PDX (us-west-2)
+     */
+    private static Region getRegion() {
+        Region region;
+        try {
+            region = new DefaultAwsRegionProviderChain().getRegion();
+        } catch (SdkClientException e) {
+            region = Region.US_WEST_2;
+        }
+        return region;
     }
 
     /**
