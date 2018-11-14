@@ -16,7 +16,7 @@ To generate an executable jar, use the following commands:
 export AWS_ACCESS_KEY_ID=<your access key>
 export AWS_SECRET_KEY=<your secret key>
 mvn clean package
-java -jar target/target/aws-transcribe-sample-application-1.0-SNAPSHOT-jar-with-dependencies.jar
+java -jar target/aws-transcribe-sample-application-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 ## Description
