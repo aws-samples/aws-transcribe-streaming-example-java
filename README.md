@@ -11,6 +11,14 @@ This sample code is made available under a modified MIT license. See the LICENSE
 This application assumes your credentials are defined in the same way the [Default Credential Provider Chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default)
 requires.
 
+To generate an executable jar, use the following commands:
+```bash
+export AWS_ACCESS_KEY_ID=<your access key>
+export AWS_SECRET_KEY=<your secret key>
+mvn clean package
+java -jar target/target/aws-transcribe-sample-application-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+
 ## Description
 
 This application demonstrates how to use AWS Transcribe's streaming API by wrapping it in a graphical user-interface. 

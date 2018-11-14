@@ -92,11 +92,6 @@ public class TranscribeStreamingClientWrapper {
             throw new IllegalStateException("Stream is already open");
         }
         try {
-            /*
-             * Provide input audio stream.
-             * For input from microphone, see getStreamFromMic().
-             * For input from file, see getStreamFromFile().
-             */
             int sampleRate = 16_000; //default
             if (inputFile != null) {
                 sampleRate = (int) AudioSystem.getAudioInputStream(inputFile).getFormat().getSampleRate();
@@ -105,15 +100,11 @@ public class TranscribeStreamingClientWrapper {
                 requestStream = new AudioStreamPublisher(getStreamFromMic());
             }
             return client.startStreamTranscription(
-                    /*
-                     * Request parameters. Refer to API document for details.
-                     */
+                    //Request parameters. Refer to API documentation for details.
                     getRequest(sampleRate),
+                    //AudioEvent publisher containing "chunks" of audio data to transcribe
                     requestStream,
-                    /*
-                     * Subscriber of real-time transcript stream.
-                     * Output will print to your computer's standard output.
-                     */
+                    //Defines what to do with transcripts as they arrive from the service
                     responseHandler);
         } catch (LineUnavailableException | UnsupportedAudioFileException | IOException ex) {
             CompletableFuture<Void> failedFuture = new CompletableFuture<>();
