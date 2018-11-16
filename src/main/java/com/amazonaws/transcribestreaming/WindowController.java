@@ -210,18 +210,17 @@ public class WindowController {
                         String transcript = firstResult.alternatives().get(0).transcript();
                         if(!transcript.isEmpty()) {
                             System.out.println(transcript);
+                            String displayText;
                             if (!firstResult.isPartial()) {
                                 finalTranscript += transcript + " ";
-                                Platform.runLater(() -> {
-                                    outputTextArea.setText(finalTranscript);
-                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
-                                });
+                                displayText = finalTranscript;
                             } else {
-                                Platform.runLater(() -> {
-                                    outputTextArea.setText(finalTranscript + " " + transcript);
-                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
-                                });
+                                displayText = finalTranscript + " " + transcript;
                             }
+                            Platform.runLater(() -> {
+                                outputTextArea.setText(displayText);
+                                outputTextArea.setScrollTop(Double.MAX_VALUE);
+                            });
                         }
                     }
 
