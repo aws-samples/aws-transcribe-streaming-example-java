@@ -212,12 +212,16 @@ public class WindowController {
                             System.out.println(transcript);
                             if (!firstResult.isPartial()) {
                                 finalTranscript += transcript + " ";
+                                Platform.runLater(() -> {
+                                    outputTextArea.setText(finalTranscript);
+                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
+                                });
+                            } else {
+                                Platform.runLater(() -> {
+                                    outputTextArea.setText(finalTranscript + " " + transcript);
+                                    outputTextArea.setScrollTop(Double.MAX_VALUE);
+                                });
                             }
-                            Platform.runLater(() -> {
-                                outputTextArea.setText(finalTranscript + " " + transcript);
-                                outputTextArea.setScrollTop(Double.MAX_VALUE);
-                            });
-
                         }
                     }
 
