@@ -46,4 +46,4 @@ service in the TranscribeStreamingSynchronousClient.java class, which is used fo
 | `TranscribeStreamingSynchronousClient` | Class providing example of turning the asynchronous event-stream API into a synchronous one | 
 
 ## See Also
-TODO: put links to our documentation here
+https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html
