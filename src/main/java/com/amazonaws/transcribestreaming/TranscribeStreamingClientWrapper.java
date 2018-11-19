@@ -68,10 +68,6 @@ public class TranscribeStreamingClientWrapper {
         try {
             return TranscribeStreamingAsyncClient.builder()
                     .credentialsProvider(getCredentials())
-                    .overrideConfiguration(
-                            c -> c.putAdvancedOption(
-                                    SdkAdvancedClientOption.SIGNER,
-                                    EventStreamAws4Signer.create()))
                     .endpointOverride(new URI(endpoint))
                     .region(region)
                     .build();

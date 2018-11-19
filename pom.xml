@@ -26,8 +26,7 @@
   <dependencies>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>aws-sdk-java</artifactId>
-      <!-- TODO: change this to real version once it is released -->
+      <artifactId>transcribestreaming</artifactId>
       <version>2.1.0</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.reactivestreams/reactive-streams -->
