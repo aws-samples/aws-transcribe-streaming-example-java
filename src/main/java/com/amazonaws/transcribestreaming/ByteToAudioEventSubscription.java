@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md
  */
 public class ByteToAudioEventSubscription implements Subscription {
-    private static final int CHUNK_SIZE_IN_BYTES = 1024 * 1;
+    private static final int CHUNK_SIZE_IN_BYTES = 1024 * 4;
     private ExecutorService executor = Executors.newFixedThreadPool(1);
     private AtomicLong demand = new AtomicLong(0);
 
