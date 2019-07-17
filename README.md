@@ -32,7 +32,7 @@ There is a new permission required to use streaming transcription, StartStreamTr
 To generate an executable jar, use the following commands:
 ```bash
 export AWS_ACCESS_KEY_ID=<your access key>
-export AWS_SECRET_KEY=<your secret key>
+export AWS_SECRET_ACCESS_KEY=<your secret key>
 export AWS_REGION=us-west-2
 mvn clean package
 java -jar target/aws-transcribe-sample-application-1.0-SNAPSHOT-jar-with-dependencies.jar
