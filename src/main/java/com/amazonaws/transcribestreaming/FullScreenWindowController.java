@@ -17,35 +17,7 @@
 
 package com.amazonaws.transcribestreaming;
 
-import javafx.application.Platform;
-import javafx.collections.ObservableList;
-import javafx.geometry.Dimension2D;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextArea;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
-import javafx.stage.FileChooser;
-import javafx.stage.Screen;
-import javafx.stage.Stage;
-import software.amazon.awssdk.services.transcribestreaming.model.Result;
-import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
-import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
-import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
-
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -53,8 +25,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import javafx.application.Platform;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
+import software.amazon.awssdk.services.transcribestreaming.model.Result;
+import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
+import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent;
+import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
 
 /**
  * This class primarily controls the GUI for this application. Most of the code relevant to starting and working
@@ -167,7 +159,7 @@ public class FullScreenWindowController {
         bottomPane.setAlignment(Pos.BOTTOM_CENTER);
         bottomPane.setVgap(10);
         bottomPane.setHgap(10);
-        bottomPane.setPadding(new Insets(25, 25, 50, 25));
+        bottomPane.setPadding(new Insets(25, 50, 50, 50));
         fill = new BackgroundFill(Color.rgb(0, 177, 64), CornerRadii.EMPTY, Insets.EMPTY);
         bottomPane.setBackground(new Background(fill));
         ObservableList<Node> list = bottomPane.getChildren();
@@ -175,10 +167,10 @@ public class FullScreenWindowController {
         outputText = new Text();
         outputText.setWrappingWidth(width);
         outputText.setText("");
-        outputText.setFont(Font.font("Gill Sans MT", 120));
+        outputText.setFont(Font.font("Gill Sans MT", 90));
         outputText.setFill(Color.WHITE);
         outputText.setStroke(Color.BLACK);
-        outputText.setStrokeWidth(3);
+        outputText.setStrokeWidth(2);
 
         list.addAll(outputText);
         
