@@ -25,7 +25,8 @@ public class TranscribeStreamingDemoApp extends Application {
     @Override
     public void start(Stage primaryStage)  {
 
-        WindowController windowController = new WindowController(primaryStage);
+        FullScreenWindowController windowController = new FullScreenWindowController(primaryStage);
+        // WindowController windowController = new WindowController(primaryStage);
 
         primaryStage.setOnCloseRequest(__ -> {
             windowController.close();

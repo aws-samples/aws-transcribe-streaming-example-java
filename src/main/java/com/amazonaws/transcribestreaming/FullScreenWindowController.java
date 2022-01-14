@@ -18,14 +18,25 @@
 package com.amazonaws.transcribestreaming;
 
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
+import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import software.amazon.awssdk.services.transcribestreaming.model.Result;
 import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
@@ -36,132 +47,156 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class primarily controls the GUI for this application. Most of the code relevant to starting and working
  * with our streaming API can be found in TranscribeStreamingClientWrapper.java, with the exception of some result
  * parsing logic in this classes method getResponseHandlerForWindow()
  */
-public class WindowController {
+public class FullScreenWindowController {
+
+    private static final int MAX_TEXT_LENGTH = 100;
+    private static final int TEXT_SIZE = 100;
+    private static final int SECONDS_TO_DISAPPEAR = 3;
 
     private TranscribeStreamingClientWrapper client;
     private TranscribeStreamingSynchronousClient synchronousClient;
-    private TextArea outputTextArea;
+    private Text outputText;
     private Button startStopMicButton;
-    private Button fileStreamButton;
-    private Button saveButton;
-    private TextArea finalTextArea;
+    // private Button fileStreamButton;
+    private Button exitButton;
+    // private Button saveButton;
+    // private TextArea finalTextArea;
     private CompletableFuture<Void> inProgressStreamingRequest;
     private String finalTranscript = "";
+    private Date lastUpdatedTime;
     private Stage primaryStage;
+    private ScheduledExecutorService scheduler;
 
-    public WindowController(Stage primaryStage) {
+    public FullScreenWindowController(Stage primaryStage) {
         client = new TranscribeStreamingClientWrapper();
         synchronousClient = new TranscribeStreamingSynchronousClient(TranscribeStreamingClientWrapper.getClient());
         this.primaryStage = primaryStage;
         initializeWindow(primaryStage);
+        startTimeoutThread();
+    }
+
+    public void startTimeoutThread() {
+        scheduler = Executors.newScheduledThreadPool(1);
+        Runnable toRun = new Runnable() {
+            public void run() {
+                if (lastUpdatedTime != null) {
+                    long diffInMillies = Math.abs(new Date().getTime() - lastUpdatedTime.getTime());
+                    long diff = TimeUnit.SECONDS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+                    System.out.println("Checking (diff = " + String.valueOf(diff) + ")");
+                    if (diff > SECONDS_TO_DISAPPEAR) {
+                        Platform.runLater(() -> {
+                            outputText.setText("");
+                        });
+                    }
+                }
+            }
+        };
+        scheduler.scheduleAtFixedRate(toRun, 1, 1, TimeUnit.SECONDS);
     }
 
     public void close() {
+        stopTranscription();
+        scheduler.shutdown();
         if (inProgressStreamingRequest != null) {
             inProgressStreamingRequest.completeExceptionally(new InterruptedException());
         }
         client.close();
     }
 
-    private void startFileTranscriptionRequest(File inputFile) {
-        if (inProgressStreamingRequest == null) {
-            finalTextArea.clear();
-            finalTranscript = "";
-            startStopMicButton.setText("Streaming...");
-            startStopMicButton.setDisable(true);
-            outputTextArea.clear();
-            finalTextArea.clear();
-            saveButton.setDisable(true);
-            finalTranscript = synchronousClient.transcribeFile(inputFile);
-            finalTextArea.setText(finalTranscript);
-            startStopMicButton.setDisable(false);
-            saveButton.setDisable(false);
-            startStopMicButton.setText("Start Microphone Transcription");
-        }
-    }
-
     private void startTranscriptionRequest(File inputFile) {
         if (inProgressStreamingRequest == null) {
-            finalTextArea.clear();
             finalTranscript = "";
             startStopMicButton.setText("Connecting...");
             startStopMicButton.setDisable(true);
-            outputTextArea.clear();
-            finalTextArea.clear();
-            saveButton.setDisable(true);
+            outputText.setText("");
+            // TODO: Make it so old text doesn't show up
             inProgressStreamingRequest = client.startTranscription(getResponseHandlerForWindow(), inputFile);
         }
     }
 
     private void initializeWindow(Stage primaryStage) {
-        GridPane grid = new GridPane();
-        grid.setAlignment(Pos.CENTER);
-        grid.setVgap(10);
-        grid.setHgap(10);
-        grid.setPadding(new Insets(25, 25, 25, 25));
+        Font buttonGillSans = Font.font("Gill Sans MT", 20);
 
-        Scene scene = new Scene(grid, 500, 600);
+        // GridPane grid = new GridPane();
+        primaryStage.setFullScreen(true);
+        FlowPane rootPane = new FlowPane();
+
+        rootPane.setAlignment(Pos.TOP_CENTER);
+        rootPane.setVgap(10);
+        rootPane.setHgap(10);
+        rootPane.setPadding(new Insets(15, 25, 25, 25));
+        BackgroundFill fill = new BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY);
+        rootPane.setBackground(new Background(fill));
+        
+        
+        int width = (int) Screen.getPrimary().getBounds().getWidth();
+        int height = (int) Screen.getPrimary().getBounds().getHeight();
+        Scene scene = new Scene(rootPane, width, height);
         primaryStage.setScene(scene);
 
         startStopMicButton = new Button();
-        startStopMicButton.setText("Start Microphone Transcription");
+        startStopMicButton.setFont(buttonGillSans);
+        startStopMicButton.setText("START TRANSCRIPTION");
         startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
-        grid.add(startStopMicButton, 0, 0, 1, 1);
 
-        fileStreamButton = new Button();
-        fileStreamButton.setText("Stream From Audio File"); //TODO: what file types do we support?
-        fileStreamButton.setOnAction(__ -> {
-            FileChooser inputFileChooser = new FileChooser();
-            inputFileChooser.setTitle("Stream Audio File");
-            File inputFile = inputFileChooser.showOpenDialog(primaryStage);
-            if (inputFile != null) {
-                startFileTranscriptionRequest(inputFile);
-            }
+        exitButton = new Button();
+        exitButton.setText("CLOSE PROGRAM");
+        exitButton.setFont(buttonGillSans);
+        exitButton.setOnAction(__ -> {
+            close();
+            primaryStage.hide();
         });
-        grid.add(fileStreamButton, 1, 0, 1, 1);
 
-        Text inProgressText = new Text("In Progress Transcriptions:");
-        grid.add(inProgressText, 0, 1, 2, 1);
+        FlowPane bottomPane = new FlowPane();
+        bottomPane.setPrefWidth(width);
+        bottomPane.setPrefHeight(height - 50);
+        bottomPane.setAlignment(Pos.BOTTOM_CENTER);
+        bottomPane.setVgap(10);
+        bottomPane.setHgap(10);
+        bottomPane.setPadding(new Insets(25, 25, 50, 25));
+        fill = new BackgroundFill(Color.rgb(0, 177, 64), CornerRadii.EMPTY, Insets.EMPTY);
+        bottomPane.setBackground(new Background(fill));
+        ObservableList<Node> list = bottomPane.getChildren();
+        
+        outputText = new Text();
+        outputText.setWrappingWidth(width);
+        outputText.setText("");
+        outputText.setFont(Font.font("Gill Sans MT", 120));
+        outputText.setFill(Color.WHITE);
+        outputText.setStroke(Color.BLACK);
+        outputText.setStrokeWidth(3);
 
-        outputTextArea = new TextArea();
-        outputTextArea.setWrapText(true);
-        outputTextArea.setEditable(false);
-        grid.add(outputTextArea, 0, 2, 2, 1);
-
-        Text finalText = new Text("Final Transcription:");
-        grid.add(finalText, 0, 3, 2, 1);
-
-        finalTextArea = new TextArea();
-        finalTextArea.setWrapText(true);
-        finalTextArea.setEditable(false);
-        grid.add(finalTextArea, 0, 4, 2, 1);
-
-        saveButton = new Button();
-        saveButton.setDisable(true);
-        saveButton.setText("Save Full Transcript");
-        grid.add(saveButton, 0, 5, 2, 1);
+        list.addAll(outputText);
+        
+        ObservableList<Node> rootList = rootPane.getChildren();
+        rootList.addAll(startStopMicButton, exitButton, bottomPane);
     }
 
     private void stopTranscription() {
         if (inProgressStreamingRequest != null) {
             try {
-                saveButton.setDisable(true);
+                // saveButton.setDisable(true);
                 client.stopTranscription();
                 inProgressStreamingRequest.get();
             } catch (ExecutionException | InterruptedException e) {
                 System.out.println("error closing stream");
             } finally {
                 inProgressStreamingRequest = null;
-                startStopMicButton.setText("Start Microphone Transcription");
+                startStopMicButton.setText("START TRANSCRIPTION");
                 startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
                 startStopMicButton.setDisable(false);
             }
@@ -207,7 +242,7 @@ public class WindowController {
                     if (firstResult.alternatives().size() > 0 && !firstResult.alternatives().get(0).transcript().isEmpty()) {
                         String transcript = firstResult.alternatives().get(0).transcript();
                         if(!transcript.isEmpty()) {
-                            System.out.println(transcript);
+                            // System.out.println(transcript);
                             String displayText;
                             if (!firstResult.isPartial()) {
                                 finalTranscript += transcript + " ";
@@ -216,8 +251,16 @@ public class WindowController {
                                 displayText = finalTranscript + " " + transcript;
                             }
                             Platform.runLater(() -> {
-                                outputTextArea.setText(displayText);
-                                outputTextArea.setScrollTop(Double.MAX_VALUE);
+                                int maxLength = 100;
+                                if (displayText.length() > maxLength) {
+                                    String newText = displayText.substring(displayText.length() - maxLength);
+                                    // Break off word
+                                    outputText.setText(newText.substring(newText.indexOf(" ")));
+                                } else {
+                                    outputText.setText(displayText);
+                                }
+                                lastUpdatedTime = new Date();
+                                // outputTextArea.setScrollTop(Double.MAX_VALUE);
                             });
                         }
                     }
@@ -248,25 +291,25 @@ public class WindowController {
             @Override
             public void onComplete() {
                 System.out.println("=== All records streamed successfully ===");
-                Platform.runLater(() -> {
-                    finalTextArea.setText(finalTranscript);
-                    saveButton.setDisable(false);
-                    saveButton.setOnAction(__ -> {
-                        FileChooser fileChooser = new FileChooser();
-                        fileChooser.setTitle("Save Transcript");
-                        File file = fileChooser.showSaveDialog(primaryStage);
-                        if (file != null) {
-                            try {
-                                FileWriter writer = new FileWriter(file);
-                                writer.write(finalTranscript);
-                                writer.close();
-                            } catch (IOException e) {
-                                System.out.println("Error saving transcript to file: " + e);
-                            }
-                        }
-                    });
+                // Platform.runLater(() -> {
+                //     // finalTextArea.setText(finalTranscript);
+                //     // saveButton.setDisable(false);
+                //     // saveButton.setOnAction(__ -> {
+                //     //     FileChooser fileChooser = new FileChooser();
+                //     //     fileChooser.setTitle("Save Transcript");
+                //     //     File file = fileChooser.showSaveDialog(primaryStage);
+                //     //     if (file != null) {
+                //     //         try {
+                //     //             FileWriter writer = new FileWriter(file);
+                //     //             writer.write(finalTranscript);
+                //     //             writer.close();
+                //     //         } catch (IOException e) {
+                //     //             System.out.println("Error saving transcript to file: " + e);
+                //     //         }
+                //     //     }
+                //     // });
 
-                });
+                // });
             }
         };
     }

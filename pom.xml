@@ -20,9 +20,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>software.amazon.awstranscribe</groupId>
-  <artifactId>aws-transcribe-sample-application</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <groupId>org.thon.aws-live-captions</groupId>
+  <artifactId>aws-live-captions</artifactId>
+  <version>1.0</version>
   <dependencies>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
@@ -34,6 +34,11 @@
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
       <version>1.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>16</version>
     </dependency>
 
   </dependencies>
@@ -69,6 +74,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-maven-plugin</artifactId>
+        <version>0.0.8</version>
+        <configuration>
+            <mainClass>com.amazonaws.transcribestreaming.TranscribeStreamingDemoApp</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>

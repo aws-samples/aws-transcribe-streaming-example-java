@@ -1,6 +1,6 @@
-# AWS Transcribe Streaming Example Java Application 
+# AWS Live Captions
 
-Example Java Application using AWS SDK creating streaming transcriptions via AWS Transcribe
+A Java Application using AWS SDK to create live transcriptions via AWS Transcribe. It takes a live audio source from the target machine and outputs captions. 
 
 ## License Summary
 
@@ -36,6 +36,11 @@ export AWS_SECRET_ACCESS_KEY=<your secret key>
 export AWS_REGION=us-west-2
 mvn clean package
 java -jar target/aws-transcribe-sample-application-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+
+You can also run from the command line using:
+```bash
+mvn clean javafx:run
 ```
 
 ## Description
