@@ -10,10 +10,7 @@ This sample code is made available under a modified MIT license. See the LICENSE
 
 **This application builds with Java 8 using JavaFX. It may not build using OpenJDK 11 due to JavaFX being moved to its own library.**
 
-This application assumes your credentials are defined in the same way the [Default Credential Provider Chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default)
-requires.
-
-There is a new permission required to use streaming transcription, StartStreamTranscription. You can use a policy like this:
+Make sure you have AWS credentials set up on your machine with at least the following permission:
 
 ```json
 {
