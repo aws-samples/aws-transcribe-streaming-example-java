@@ -36,6 +36,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
@@ -56,9 +57,15 @@ public class TranscribeStreamingClientWrapper {
 
     private TranscribeStreamingRetryClient client;
     private AudioStreamPublisher requestStream;
+    private Mixer.Info audioInput;
+
+    public TranscribeStreamingClientWrapper(Mixer.Info audioInput) {
+        client = new TranscribeStreamingRetryClient(getClient());
+        this.audioInput = audioInput;
+    }
 
     public TranscribeStreamingClientWrapper() {
-        client = new TranscribeStreamingRetryClient(getClient());
+        this(null);
     }
 
     public static TranscribeStreamingAsyncClient getClient() {
@@ -107,7 +114,7 @@ public class TranscribeStreamingClientWrapper {
                 sampleRate = (int) AudioSystem.getAudioInputStream(inputFile).getFormat().getSampleRate();
                 requestStream = new AudioStreamPublisher(getStreamFromFile(inputFile));
             } else {
-                requestStream = new AudioStreamPublisher(getStreamFromMic());
+                requestStream = new AudioStreamPublisher(getStreamFromMic(audioInput));
             }
             return client.startStreamTranscription(
                     //Request parameters. Refer to API documentation for details.
@@ -171,6 +178,28 @@ public class TranscribeStreamingClientWrapper {
         }
 
         TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
+        line.open(format);
+        line.start();
+
+        return new AudioInputStream(line);
+    }
+
+    private static InputStream getStreamFromMic(Mixer.Info mixer) throws LineUnavailableException {
+        if (mixer == null) {
+            return getStreamFromMic();
+        }
+
+        // Signed PCM AudioFormat with 16kHz, 16 bit sample size, mono
+        int sampleRate = 16000;
+        AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+
+        if (!AudioSystem.isLineSupported(info)) {
+            System.out.println("Line not supported");
+            System.exit(0);
+        }
+
+        TargetDataLine line = (TargetDataLine) AudioSystem.getMixer(mixer).getLine(info);
         line.open(format);
         line.start();
 
