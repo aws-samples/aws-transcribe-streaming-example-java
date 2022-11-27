@@ -15,7 +15,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.amazonaws.transcribestreaming;
+package org.thon.transcribestreaming;
 
 import java.net.URI;
 import java.net.URISyntaxException;

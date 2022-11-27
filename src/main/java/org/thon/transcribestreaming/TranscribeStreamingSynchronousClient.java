@@ -15,7 +15,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.amazonaws.transcribestreaming;
+package org.thon.transcribestreaming;
 
 import software.amazon.awssdk.services.transcribestreaming.TranscribeStreamingAsyncClient;
 import software.amazon.awssdk.services.transcribestreaming.model.LanguageCode;
@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.transcribestreaming.model.TranscriptEvent
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;

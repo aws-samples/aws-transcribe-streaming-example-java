@@ -15,29 +15,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.amazonaws.transcribestreaming;
+package org.thon.transcribestreaming;
 
-import javafx.application.Application;
-import javafx.stage.Stage;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 
-public class TranscribeStreamingDemoApp extends Application {
+import software.amazon.awssdk.services.transcribestreaming.model.AudioStream;
+
+import java.io.InputStream;
+
+/**
+ * AudioStreamPublisher implements audio stream publisher.
+ * AudioStreamPublisher emits audio stream asynchronously in a separate thread
+ */
+public class AudioStreamPublisher implements Publisher<AudioStream> {
+
+    private final InputStream inputStream;
+
+    public AudioStreamPublisher(InputStream inputStream) {
+        this.inputStream = inputStream;
+    }
 
     @Override
-    public void start(Stage primaryStage)  {
-
-        FullScreenWindowController windowController = new FullScreenWindowController(primaryStage);
-        // WindowController windowController = new WindowController(primaryStage);
-
-        primaryStage.setOnCloseRequest(__ -> {
-            windowController.close();
-            System.exit(0);
-        });
-        primaryStage.show();
-
+    public void subscribe(Subscriber<? super AudioStream> s) {
+        s.onSubscribe(new ByteToAudioEventSubscription(s, inputStream));
     }
-
-    public static void main(String args[]) {
-        launch(args);
-    }
-
 }

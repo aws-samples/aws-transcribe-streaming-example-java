@@ -15,33 +15,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.amazonaws.transcribestreaming;
+package org.thon.transcribestreaming;
 
-import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
-import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
+import javafx.application.Application;
+import javafx.stage.Stage;
 
-public interface StreamTranscriptionBehavior {
-    /**
-     * Defines how to respond when encountering an error on the stream transcription.
-     * @param e The exception
-     */
-    void onError(Throwable e);
+public class TranscribeStreamingDemoApp extends Application {
 
-    /**
-     * Defines how to respond to the Transcript result stream.
-     * @param e The TranscriptResultStream event
-     */
-    void onStream(TranscriptResultStream e);
+    @Override
+    public void start(Stage primaryStage)  {
 
-    /**
-     * Defines what to do on initiating a stream connection with the service.
-     * @param r StartStreamTranscriptionResponse
-     */
-    void onResponse(StartStreamTranscriptionResponse r);
+        FullScreenWindowController windowController = new FullScreenWindowController(primaryStage);
+        // WindowController windowController = new WindowController(primaryStage);
 
+        primaryStage.setOnCloseRequest(__ -> {
+            windowController.close();
+            System.exit(0);
+        });
+        primaryStage.show();
 
-    /**
-     * Defines what to do on stream completion
-     */
-    void onComplete();
+    }
+
+    public static void main(String args[]) {
+        launch(args);
+    }
+
 }

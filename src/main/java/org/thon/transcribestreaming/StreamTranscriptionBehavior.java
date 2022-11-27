@@ -15,28 +15,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.amazonaws.transcribestreaming;
+package org.thon.transcribestreaming;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import software.amazon.awssdk.services.transcribestreaming.model.AudioStream;
+import software.amazon.awssdk.services.transcribestreaming.model.StartStreamTranscriptionResponse;
+import software.amazon.awssdk.services.transcribestreaming.model.TranscriptResultStream;
 
-import java.io.InputStream;
+public interface StreamTranscriptionBehavior {
+    /**
+     * Defines how to respond when encountering an error on the stream transcription.
+     * @param e The exception
+     */
+    void onError(Throwable e);
 
-/**
- * AudioStreamPublisher implements audio stream publisher.
- * AudioStreamPublisher emits audio stream asynchronously in a separate thread
- */
-public class AudioStreamPublisher implements Publisher<AudioStream> {
+    /**
+     * Defines how to respond to the Transcript result stream.
+     * @param e The TranscriptResultStream event
+     */
+    void onStream(TranscriptResultStream e);
 
-    private final InputStream inputStream;
+    /**
+     * Defines what to do on initiating a stream connection with the service.
+     * @param r StartStreamTranscriptionResponse
+     */
+    void onResponse(StartStreamTranscriptionResponse r);
 
-    public AudioStreamPublisher(InputStream inputStream) {
-        this.inputStream = inputStream;
-    }
 
-    @Override
-    public void subscribe(Subscriber<? super AudioStream> s) {
-        s.onSubscribe(new ByteToAudioEventSubscription(s, inputStream));
-    }
+    /**
+     * Defines what to do on stream completion
+     */
+    void onComplete();
 }
