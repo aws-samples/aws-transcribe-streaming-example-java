@@ -7,6 +7,7 @@ import javax.sound.sampled.Mixer.Info;
 
 import javafx.util.Callback;
 import javafx.scene.control.ListView;
+import javafx.scene.text.Font;
 import javafx.scene.control.ListCell;
 
 /**
@@ -14,11 +15,14 @@ import javafx.scene.control.ListCell;
  */
 public class MixerRenderer implements Callback<ListView<Mixer.Info>, ListCell<Mixer.Info>> {
 
+    private static Font font = Font.font("Gill Sans MT", 20);
+
     @Override
     public ListCell<Info> call(ListView<Info> param) {
         ListCell<Info> cell = new ListCell<Info>() {
             {
                 super.setPrefWidth(100);
+                super.setFont(font);
             }
             @Override
             protected void updateItem(Info item, boolean empty) {

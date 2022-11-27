@@ -38,7 +38,7 @@ import software.amazon.awssdk.services.transcribestreaming.model.*;
  */
 public class TranscribeStreamingRetryClient {
 
-    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final int DEFAULT_MAX_RETRIES = 10;
     private static final int DEFAULT_MAX_SLEEP_TIME_MILLS = 100;
     private int maxRetries = DEFAULT_MAX_RETRIES;
     private int sleepTime = DEFAULT_MAX_SLEEP_TIME_MILLS;

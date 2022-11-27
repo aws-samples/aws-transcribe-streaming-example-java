@@ -131,6 +131,7 @@ public class FullScreenWindowController {
             finalTranscript = "";
             startStopMicButton.setText("Connecting...");
             startStopMicButton.setDisable(true);
+            audioInputSelect.setDisable(true);
             outputText.setText("");
             // TODO: Make it so old text doesn't show up
             inProgressStreamingRequest = client.startTranscription(getResponseHandlerForWindow(), inputFile);
@@ -142,6 +143,7 @@ public class FullScreenWindowController {
                     startStopMicButton.setText("START TRANSCRIPTION");
                     startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
                     startStopMicButton.setDisable(false);
+                    audioInputSelect.setDisable(false);
                 }
                 return result;
             });
@@ -182,6 +184,7 @@ public class FullScreenWindowController {
         });
 
         audioInputSelect = new ComboBox<>();
+        audioInputSelect.setStyle("-fx-font: 20px \"Gill Sans MT\";");
         audioInputSelect.setCellFactory(new MixerRenderer());
         updateAudioInputDropdown();
         audioInputSelect.valueProperty().addListener(new ChangeListener<Mixer.Info>() {
@@ -242,6 +245,7 @@ public class FullScreenWindowController {
                 startStopMicButton.setText("START TRANSCRIPTION");
                 startStopMicButton.setOnAction(__ -> startTranscriptionRequest(null));
                 startStopMicButton.setDisable(false);
+                audioInputSelect.setDisable(false);
             }
 
         }
@@ -334,6 +338,7 @@ public class FullScreenWindowController {
             @Override
             public void onComplete() {
                 System.out.println("=== All records streamed successfully ===");
+                audioInputSelect.setDisable(false);
                 // Platform.runLater(() -> {
                 //     // finalTextArea.setText(finalTranscript);
                 //     // saveButton.setDisable(false);
